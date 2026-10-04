@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#102b46">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Футбол и математика">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <link rel="stylesheet" href="style.css">
+    <title>Футбол и математика</title>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="На главную">
+        <span class="brand-ball" aria-hidden="true">⚽</span>
+        <span>Футбол <span class="brand-and">×</span> математика</span>
+      </a>
+      <div class="score" aria-label="Очки и серия">
+        <span>⭐ <b id="xp">0</b></span>
+        <span>🔥 <b id="streak">0</b></span>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-heading">
+          <div>
+            <p class="eyebrow">ТРЕНИРОВКИ</p>
+            <h2>Тренировка дня</h2>
+          </div>
+          <span class="progress-count" id="daily-count">0/20</span>
+        </div>
+        <div class="progress-track" aria-label="Прогресс тренировки дня">
+          <span id="daily-progress-bar"></span>
+        </div>
+        <p class="daily-status" id="daily-status" role="status">Реши правильно 20 разных заданий сегодня.</p>
+        <button class="vocabulary-button" id="vocabulary-button" type="button">📖 Тренировать словарные слова</button>
+        <p class="chapter-label">МАТЕМАТИКА · ПАРАГРАФЫ</p>
+        <nav id="topic-list" aria-label="Темы математики"></nav>
+        <details class="parent-settings">
+          <summary>⚙️ Сообщение родителю в Telegram</summary>
+          <form id="telegram-form">
+            <label for="telegram-endpoint">Ссылка на безопасный сервер бота</label>
+            <input id="telegram-endpoint" type="url" inputmode="url" autocomplete="url" placeholder="Добавим после настройки бота">
+            <button type="submit">Сохранить ссылку</button>
+          </form>
+          <p>Ссылку добавим после настройки бесплатного Telegram-бота.</p>
+        </details>
+        <p class="sidebar-note">Очки и прогресс хранятся на этом устройстве.</p>
+      </aside>
+
+      <section class="lesson" aria-live="polite">
+        <div class="lesson-heading">
+          <div>
+            <p class="eyebrow" id="section-label">ГЛАВА I · СМЕШАННЫЕ ЧИСЛА</p>
+            <h1 id="topic-title"></h1>
+          </div>
+          <span class="level-badge" id="level-badge">ТРЕНИРОВКА 1</span>
+        </div>
+
+        <div class="match-card">
+          <div class="match-topline">
+            <span class="live-dot"></span>
+            <span>МИНИ-МАТЧ</span>
+            <span class="match-half">1-й тайм</span>
+          </div>
+          <div class="field" aria-hidden="true">
+            <span class="field-line"></span>
+            <span class="field-circle"></span>
+            <span class="goal goal-left"></span>
+            <span class="goal goal-right"></span>
+            <span class="player player-one">⚽</span>
+            <span class="player player-two">🏃</span>
+          </div>
+          <div class="word-card" id="word-card" hidden>
+            <p class="word-card-label">ПРОЧИТАЙ, ПРОИЗНЕСИ И ЗАПОМНИ</p>
+            <p class="word-display" id="word-display"></p>
+            <p class="word-context" id="word-context"></p>
+            <button class="word-toggle" id="word-toggle" type="button">Спрятать слово и попробовать</button>
+          </div>
+          <p class="question-label" id="question-label">ЗАДАНИЕ НА СЕГОДНЯ</p>
+          <p class="question" id="question"></p>
+          <form id="answer-form" novalidate>
+            <label class="answer-label" for="answer">Твой ответ</label>
+            <div class="answer-row">
+              <input id="answer" name="answer" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" placeholder="Напиши ответ" required>
+              <button class="kick-button" type="submit">Ударить по воротам <span aria-hidden="true">→</span></button>
+            </div>
+            <p class="feedback" id="feedback" role="status"></p>
+          </form>
+          <div class="help-actions">
+            <button class="text-button" id="explain-button" type="button">📘 Объясни</button>
+            <button class="text-button" id="hint-button" type="button">💡 Подсказка</button>
+          </div>
+          <div class="help-panel" id="help-panel" hidden></div>
+        </div>
+        <div class="next-row">
+          <p>Математика и словарные слова вперемешку ⚽</p>
+          <button class="next-button" id="next-button" type="button">Следующее задание <span aria-hidden="true">→</span></button>
+        </div>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
