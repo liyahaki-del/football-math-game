@@ -82,6 +82,8 @@ button { cursor: pointer; }
 .daily-status.done { color: #3f8a20; font-weight: 900; }
 .vocabulary-button { width: 100%; min-height: 40px; margin: 0 0 5px; border: 1px solid #dce8cd; border-radius: 10px; color: #4f701f; background: #f5f9ef; text-align: left; padding: 8px 11px; font-size: 12px; font-weight: 900; }
 .vocabulary-button:hover { background: #eaf4dd; }
+.dictation-button { width: 100%; min-height: 40px; margin: 0 0 9px; border: 0; border-radius: 10px; color: white; background: var(--navy-soft); text-align: left; padding: 8px 11px; font-size: 12px; font-weight: 900; }
+.dictation-button:hover { background: var(--navy); }
 .parent-settings { margin: 18px 0 0; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
 .parent-settings summary { color: #405369; cursor: pointer; font-size: 12px; font-weight: 900; }
 .parent-settings form { display: grid; gap: 8px; margin-top: 12px; }
@@ -159,6 +161,8 @@ button { cursor: pointer; }
 .word-card-label { margin: 0 0 7px; color: #738294; font-size: 9px; font-weight: 900; letter-spacing: 1px; }
 .word-display { margin: 0; color: var(--navy); font-size: clamp(25px, 4vw, 34px); font-weight: 900; letter-spacing: 1.5px; }
 .word-display.is-hidden { filter: blur(9px); user-select: none; }
+.word-meaning { margin: 7px 0 0; color: #405369; font-size: 13px; line-height: 1.45; }
+.word-spelling-tip { margin: 6px 0 0; color: #4f701f; font-size: 12px; font-weight: 800; line-height: 1.45; }
 .word-context { margin: 8px 0 0; color: #53667a; font-size: 13px; line-height: 1.5; }
 .word-toggle { margin-top: 11px; padding: 7px 10px; border: 1px solid #dce8cd; border-radius: 8px; color: #4f701f; background: white; font-size: 11px; font-weight: 900; }
 .answer-label { display: block; margin-bottom: 7px; color: #66778a; font-size: 12px; font-weight: 800; }

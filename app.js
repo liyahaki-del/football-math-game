@@ -195,12 +195,33 @@ const vocabulary = [
   { id: "yazyk", word: "язык", sentence: "Русский ______ — школьный предмет." }
 ];
 
+const dictationVocabulary = [
+  { id: "akkuratny", word: "аккуратный", meaning: "Опрятный; сделанный тщательно и без ошибок.", spellingTip: "Запомни две буквы К в середине: акку-ратный.", sentence: "Аккуратный игрок бережёт форму." },
+  { id: "alyuminievy", word: "алюминиевый", meaning: "Сделанный из алюминия.", spellingTip: "Пиши «алюминиевый»: после И — ЕВ, одна Н.", sentence: "У тренера алюминиевая фляга." },
+  { id: "alyuminiy", word: "алюминий", meaning: "Лёгкий серебристый металл.", spellingTip: "Словарное слово: алюминий. Не путай с прилагательным «алюминиевый».", sentence: "Алюминий используют в производстве." },
+  { id: "armatura", word: "арматура", meaning: "Металлические стержни, которые укрепляют бетон.", spellingTip: "Проверочного слова для безударных гласных нет: арматура.", sentence: "Арматура укрепляет бетонную конструкцию." },
+  { id: "bagryany", word: "багряный", meaning: "Ярко-красный, тёмно-красный.", spellingTip: "Запомни словарное написание: багряный.", sentence: "Над стадионом зажглось багряное небо." },
+  { id: "basseyn", word: "бассейн", meaning: "Искусственный водоём для плавания.", spellingTip: "В середине две С: бас-сейн.", sentence: "После тренировки команда пошла в бассейн." },
+  { id: "bahroma", word: "бахрома", meaning: "Ряд нитей или кисточек по краю ткани.", spellingTip: "Запомни безударную О в конце: бахрома.", sentence: "Край старого полотенца украшала бахрома." },
+  { id: "bezmyatezhny", word: "безмятежный", meaning: "Спокойный, ничем не тревожимый.", spellingTip: "Пиши приставку БЕЗ- и сочетание МЯ: без-мя-теж-ный.", sentence: "Вечер на стадионе был безмятежным." },
+  { id: "beton", word: "бетон", meaning: "Строительный материал из цемента, воды и наполнителей.", spellingTip: "Запомни букву Е в первом слоге: бетон.", sentence: "Трибуны стадиона построили из бетона." },
+  { id: "biografiya", word: "биография", meaning: "Описание жизни человека.", spellingTip: "Слово начинается с БИО-: биография.", sentence: "Мы прочитали биографию знаменитого футболиста." },
+  { id: "biryuzovy", word: "бирюзовый", meaning: "Голубовато-зелёный, цвета бирюзы.", spellingTip: "Запомни начало: бирюза, бирюзовый.", sentence: "Вратарь надел бирюзовую форму." },
+  { id: "bogatyr", word: "богатырь", meaning: "Герой русских былин, сильный и храбрый воин.", spellingTip: "В конце мягкий знак: богатырь.", sentence: "Богатырь в сказке защитил свой город." },
+  { id: "bordovy", word: "бордовый", meaning: "Тёмно-красный цвет.", spellingTip: "Запомни безударную О: бордовый.", sentence: "Команда выбрала бордовые шарфы." },
+  { id: "velikolepny", word: "великолепный", meaning: "Очень красивый или превосходный.", spellingTip: "Раздели для запоминания: ве-ли-ко-леп-ный.", sentence: "Нападающий забил великолепный гол." },
+  { id: "vestibyul", word: "вестибюль", meaning: "Входное помещение в общественном здании.", spellingTip: "В конце мягкий знак: вестибюль.", sentence: "Болельщики встретились в вестибюле стадиона." },
+  { id: "gektar", word: "гектар", meaning: "Единица площади, равная 10 000 квадратных метров.", spellingTip: "Запомни первую букву Е: гектар.", sentence: "Поле занимает один гектар." },
+  { id: "general", word: "генерал", meaning: "Высокое воинское звание; человек с этим званием.", spellingTip: "Запомни первую букву Е: генерал.", sentence: "Генерал выступил перед кадетами." },
+  { id: "gostinaya", word: "гостиная", meaning: "Общая комната для отдыха и приёма гостей.", spellingTip: "В первом слоге пишется О: гостиная.", sentence: "В гостиной семья смотрела матч." }
+].map(entry => ({ ...entry, id: entry.id.replace(/\s/g, ""), dictation: true }));
+
 const storageKey = "football-math-progress-v1";
 const telegramEndpointKey = "football-math-telegram-endpoint-v1";
 const dailyTarget = 20;
 const dailyMathCount = 16;
 const dailyWordCount = dailyTarget - dailyMathCount;
-const dailyPlanVersion = 2;
+const dailyPlanVersion = 3;
 let progress = loadProgress();
 let currentTask = null;
 let feedbackTimer;
@@ -216,9 +237,14 @@ const telegramEndpointInput = document.querySelector("#telegram-endpoint");
 const wordCard = document.querySelector("#word-card");
 const wordDisplay = document.querySelector("#word-display");
 const wordContext = document.querySelector("#word-context");
+const wordMeaning = document.querySelector("#word-meaning");
+const wordSpellingTip = document.querySelector("#word-spelling-tip");
 const wordToggle = document.querySelector("#word-toggle");
 const nextButton = document.querySelector("#next-button");
 const vocabularyButton = document.querySelector("#vocabulary-button");
+const dictationButton = document.querySelector("#dictation-button");
+let dictationQueue = [];
+let dictationIndex = 0;
 
 function localDate() {
   const date = new Date();
@@ -248,11 +274,13 @@ function buildDailyProgress(topicDates, wordStats) {
     return ordered.slice(0, group.count).map(topic => `math:${topic.id}`);
   });
 
-  const words = shuffle(vocabulary).sort((left, right) => {
+  const allWords = [...dictationVocabulary, ...vocabulary];
+  const words = shuffle(allWords).sort((left, right) => {
     const leftStats = wordStats[left.id] ?? {};
     const rightStats = wordStats[right.id] ?? {};
+    const dictationPriority = Number(Boolean(right.dictation)) - Number(Boolean(left.dictation));
     const errorPriority = Number(Boolean(rightStats.lastError)) - Number(Boolean(leftStats.lastError));
-    return errorPriority || (leftStats.lastSeen ?? "").localeCompare(rightStats.lastSeen ?? "");
+    return dictationPriority || errorPriority || (leftStats.lastSeen ?? "").localeCompare(rightStats.lastSeen ?? "");
   });
   const wordTasks = words.slice(0, dailyWordCount).map(word => `word:${word.id}`);
   const shuffledMath = shuffle(mathTasks);
@@ -278,7 +306,8 @@ function createDailyProgress(daily, topicDates, wordStats) {
   }
   const queue = [...new Set(daily.queue)];
   const validMathCount = queue.filter(id => /^math:\d+$/.test(id) && topics.some(topic => `math:${topic.id}` === id)).length;
-  const validWordCount = queue.filter(id => id.startsWith("word:") && vocabulary.some(word => `word:${word.id}` === id)).length;
+  const allWords = [...dictationVocabulary, ...vocabulary];
+  const validWordCount = queue.filter(id => id.startsWith("word:") && allWords.some(word => `word:${word.id}` === id)).length;
   if (queue.length !== dailyTarget || validMathCount !== dailyMathCount || validWordCount !== dailyWordCount) {
     return buildDailyProgress(topicDates, wordStats);
   }
@@ -362,10 +391,19 @@ function updateScore() {
   } else {
     dailyStatus.textContent = `Решено ${dailyCompleted} из ${dailyTarget}: математика и словарные слова. Осталось ${dailyTarget - dailyCompleted}.`;
   }
-  nextButton.disabled = dailyCompleted >= dailyTarget;
-  nextButton.innerHTML = dailyCompleted >= dailyTarget
-    ? "Тренировка завершена ✓"
-    : "Следующее задание <span aria-hidden=\"true\">→</span>";
+  const dictationMode = currentTask?.mode === "dictation";
+  nextButton.disabled = dictationMode
+    ? !currentTask.readyForNext
+    : dailyCompleted >= dailyTarget;
+  nextButton.innerHTML = dictationMode
+    ? currentTask.readyForNext && dictationIndex < dictationQueue.length
+      ? `Следующее слово (${dictationIndex + 1}/${dictationQueue.length}) <span aria-hidden="true">→</span>`
+      : currentTask.readyForNext
+        ? "Диктант окончен ✓"
+        : "Сначала напиши слово"
+    : dailyCompleted >= dailyTarget
+      ? "Тренировка завершена ✓"
+      : "Следующее задание <span aria-hidden=\"true\">→</span>";
 }
 
 function showTask(task) {
@@ -384,17 +422,23 @@ function showTask(task) {
   const position = progress.daily.queue.indexOf(task.taskId);
   document.querySelector("#level-badge").textContent = position >= 0
     ? `ЗАДАНИЕ ${position + 1}/${dailyTarget}`
-    : "ПОВТОРЕНИЕ";
+    : task.mode === "dictation"
+      ? `СЛОВО ${dictationIndex + 1}/${dictationQueue.length}`
+      : "ПОВТОРЕНИЕ";
   wordCard.hidden = !isWord;
   if (isWord) {
     wordDisplay.textContent = word.word;
     wordDisplay.classList.remove("is-hidden");
+    wordMeaning.textContent = word.meaning ?? "Прочитай слово и запомни его написание.";
+    wordSpellingTip.textContent = word.spellingTip ?? "";
+    wordSpellingTip.hidden = false;
     wordContext.textContent = "Прочитай слово вслух, обрати внимание на его написание. Потом спрячь карточку и напиши слово по памяти.";
     wordToggle.textContent = "Спрятать слово и попробовать";
   }
   answerInput.value = "";
   feedback.textContent = "";
   feedback.className = "feedback";
+  if (task.mode === "dictation") task.readyForNext = false;
   helpPanel.hidden = true;
   helpPanel.textContent = "";
   renderTopics();
@@ -410,7 +454,7 @@ function showNextTask() {
     if (topic) showTask({ kind, topic, taskId: nextTaskId });
     return;
   }
-  const word = vocabulary.find(item => item.id === id);
+  const word = [...dictationVocabulary, ...vocabulary].find(item => item.id === id);
   if (word) showTask({ kind, word, taskId: nextTaskId });
 }
 
@@ -418,9 +462,21 @@ function showNextVocabularyTask() {
   const nextWordTaskId = progress.daily.queue.find(taskId =>
     taskId.startsWith("word:") && !progress.daily.tasks.includes(taskId)
   );
-  const word = vocabulary.find(item => `word:${item.id}` === nextWordTaskId)
-    ?? shuffle(vocabulary)[0];
+  const word = [...dictationVocabulary, ...vocabulary].find(item => `word:${item.id}` === nextWordTaskId)
+    ?? shuffle([...dictationVocabulary, ...vocabulary])[0];
   showTask({ kind: "word", word, taskId: `word:${word.id}` });
+}
+
+function showDictationWord() {
+  const word = dictationQueue[dictationIndex];
+  if (!word) {
+    updateScore();
+    showFeedback("Диктант окончен! Повтори слова, в которых были ошибки.", "success");
+    return;
+  }
+  const scheduledId = `word:${word.id}`;
+  const taskId = progress.daily.queue.includes(scheduledId) ? scheduledId : `dictation:${word.id}`;
+  showTask({ kind: "word", word, taskId, mode: "dictation", readyForNext: false });
 }
 
 function normalize(value) {
@@ -489,6 +545,9 @@ answerForm.addEventListener("submit", event => {
       const stats = progress.wordStats[currentTask.word.id] ?? { lastSeen: null, lastError: null };
       stats.lastError = localDate();
       progress.wordStats[currentTask.word.id] = stats;
+      wordDisplay.classList.remove("is-hidden");
+      wordSpellingTip.hidden = false;
+      wordToggle.textContent = "Спрятать слово и попробовать";
     }
     showFeedback(
       currentTask.kind === "word"
@@ -518,6 +577,10 @@ answerForm.addEventListener("submit", event => {
     stats.lastSeen = localDate();
     stats.lastError = null;
     progress.wordStats[currentTask.word.id] = stats;
+  }
+  if (currentTask.mode === "dictation") {
+    currentTask.readyForNext = true;
+    dictationIndex += 1;
   }
   progress.streak += 1;
   saveProgress();
@@ -559,13 +622,25 @@ document.querySelector("#hint-button").addEventListener("click", () => {
 
 wordToggle.addEventListener("click", () => {
   const hidden = wordDisplay.classList.toggle("is-hidden");
+  wordSpellingTip.hidden = hidden;
   wordToggle.textContent = hidden ? "Показать слово" : "Спрятать слово и попробовать";
 });
 
 vocabularyButton.addEventListener("click", () => showNextVocabularyTask());
 
+dictationButton.addEventListener("click", () => {
+  dictationQueue = shuffle(dictationVocabulary);
+  dictationIndex = 0;
+  showDictationWord();
+  document.querySelector(".lesson").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
 nextButton.addEventListener("click", () => {
-  showNextTask();
+  if (currentTask?.mode === "dictation") {
+    showDictationWord();
+  } else {
+    showNextTask();
+  }
   document.querySelector(".lesson").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
