@@ -34,14 +34,23 @@
           </div>
           <span class="progress-count" id="daily-count">0/20</span>
         </div>
+        <div class="subject-tabs" role="tablist" aria-label="Выбор предмета">
+          <button class="subject-tab" id="math-tab" type="button" role="tab" aria-selected="false">⚽ Математика</button>
+          <button class="subject-tab" id="russian-tab" type="button" role="tab" aria-selected="false">📖 Русский язык</button>
+        </div>
         <div class="progress-track" aria-label="Прогресс тренировки дня">
           <span id="daily-progress-bar"></span>
         </div>
         <p class="daily-status" id="daily-status" role="status">Реши правильно 20 разных заданий сегодня.</p>
-        <button class="vocabulary-button" id="vocabulary-button" type="button">📖 Тренировать словарные слова</button>
-        <button class="dictation-button" id="dictation-button" type="button">✍️ Подготовиться к диктанту</button>
-        <p class="chapter-label">МАТЕМАТИКА · ПАРАГРАФЫ</p>
-        <nav id="topic-list" aria-label="Темы математики"></nav>
+        <div id="math-tools">
+          <p class="chapter-label">МАТЕМАТИКА · ПАРАГРАФЫ</p>
+          <nav id="topic-list" aria-label="Темы математики"></nav>
+        </div>
+        <div id="russian-tools" hidden>
+          <button class="dictation-button" id="dictation-button" type="button">✍️ Подготовиться к диктанту</button>
+          <p class="chapter-label">СЛОВАРЬ К ДИКТАНТУ</p>
+          <nav id="word-list" aria-label="Словарные слова"></nav>
+        </div>
         <details class="parent-settings">
           <summary>⚙️ Сообщение родителю в Telegram</summary>
           <form id="telegram-form">

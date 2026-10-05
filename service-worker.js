@@ -1,4 +1,4 @@
-const cacheName = "football-math-v3";
+const cacheName = "football-math-v4";
 const appFiles = [
   "./",
   "./index.html",

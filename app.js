@@ -221,12 +221,14 @@ const telegramEndpointKey = "football-math-telegram-endpoint-v1";
 const dailyTarget = 20;
 const dailyMathCount = 16;
 const dailyWordCount = dailyTarget - dailyMathCount;
-const dailyPlanVersion = 3;
+const dailyPlanVersion = 4;
 let progress = loadProgress();
 let currentTask = null;
 let feedbackTimer;
+let currentSubject = localStorage.getItem("football-math-subject") === "math" ? "math" : "russian";
 
 const topicList = document.querySelector("#topic-list");
+const wordList = document.querySelector("#word-list");
 const answerForm = document.querySelector("#answer-form");
 const answerInput = document.querySelector("#answer");
 const feedback = document.querySelector("#feedback");
@@ -241,8 +243,11 @@ const wordMeaning = document.querySelector("#word-meaning");
 const wordSpellingTip = document.querySelector("#word-spelling-tip");
 const wordToggle = document.querySelector("#word-toggle");
 const nextButton = document.querySelector("#next-button");
-const vocabularyButton = document.querySelector("#vocabulary-button");
 const dictationButton = document.querySelector("#dictation-button");
+const mathTab = document.querySelector("#math-tab");
+const russianTab = document.querySelector("#russian-tab");
+const mathTools = document.querySelector("#math-tools");
+const russianTools = document.querySelector("#russian-tools");
 let dictationQueue = [];
 let dictationIndex = 0;
 
@@ -274,8 +279,7 @@ function buildDailyProgress(topicDates, wordStats) {
     return ordered.slice(0, group.count).map(topic => `math:${topic.id}`);
   });
 
-  const allWords = [...dictationVocabulary, ...vocabulary];
-  const words = shuffle(allWords).sort((left, right) => {
+  const words = shuffle(dictationVocabulary).sort((left, right) => {
     const leftStats = wordStats[left.id] ?? {};
     const rightStats = wordStats[right.id] ?? {};
     const dictationPriority = Number(Boolean(right.dictation)) - Number(Boolean(left.dictation));
@@ -306,8 +310,7 @@ function createDailyProgress(daily, topicDates, wordStats) {
   }
   const queue = [...new Set(daily.queue)];
   const validMathCount = queue.filter(id => /^math:\d+$/.test(id) && topics.some(topic => `math:${topic.id}` === id)).length;
-  const allWords = [...dictationVocabulary, ...vocabulary];
-  const validWordCount = queue.filter(id => id.startsWith("word:") && allWords.some(word => `word:${word.id}` === id)).length;
+  const validWordCount = queue.filter(id => id.startsWith("word:") && dictationVocabulary.some(word => `word:${word.id}` === id)).length;
   if (queue.length !== dailyTarget || validMathCount !== dailyMathCount || validWordCount !== dailyWordCount) {
     return buildDailyProgress(topicDates, wordStats);
   }
@@ -373,6 +376,51 @@ function renderTopics() {
   }
 }
 
+function renderWordList() {
+  wordList.replaceChildren();
+  for (const word of dictationVocabulary) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "word-button";
+    if (currentTask?.kind === "word" && currentTask.word.id === word.id) button.classList.add("active");
+    if (progress.wordStats[word.id]?.lastSeen) button.classList.add("done");
+    button.textContent = word.word;
+    button.addEventListener("click", () => {
+      const taskId = `word:${word.id}`;
+      showTask({
+        kind: "word",
+        word,
+        taskId: progress.daily.queue.includes(taskId) ? taskId : `dictation:${word.id}`,
+        mode: "subject-practice",
+        readyForNext: false
+      });
+    });
+    wordList.append(button);
+  }
+}
+
+function setSubject(subject) {
+  currentSubject = subject;
+  localStorage.setItem("football-math-subject", subject);
+  const isRussian = subject === "russian";
+  mathTab.setAttribute("aria-selected", String(!isRussian));
+  russianTab.setAttribute("aria-selected", String(isRussian));
+  mathTools.hidden = isRussian;
+  russianTools.hidden = !isRussian;
+  document.querySelector(".sidebar-heading h2").textContent = isRussian ? "Русский язык" : "Тренировка дня";
+  document.querySelector(".next-row p").textContent = isRussian
+    ? "Словарные слова для подготовки к диктанту ✍️"
+    : "Математические задания из параграфов ⚽";
+  if (isRussian) {
+    if (currentTask?.kind !== "word") showNextSubjectTask("russian");
+  } else if (currentTask?.kind !== "math") {
+    showNextSubjectTask("math");
+  }
+  renderTopics();
+  renderWordList();
+  updateScore();
+}
+
 function updateScore() {
   if (progress.daily.date !== localDate()) {
     progress.daily = createDailyProgress(null, progress.topicDates, progress.wordStats);
@@ -380,6 +428,8 @@ function updateScore() {
   }
   document.querySelector("#xp").textContent = progress.xp;
   document.querySelector("#streak").textContent = progress.streak;
+  const relevantTaskIds = progress.daily.queue.filter(taskId => taskId.startsWith(currentSubject === "math" ? "math:" : "word:"));
+  const completedRelevantTasks = progress.daily.tasks.filter(taskId => relevantTaskIds.includes(taskId)).length;
   const dailyCompleted = Math.min(progress.daily.tasks.length, dailyTarget);
   document.querySelector("#daily-count").textContent = `${dailyCompleted}/${dailyTarget}`;
   document.querySelector("#daily-progress-bar").style.width = `${dailyCompleted / dailyTarget * 100}%`;
@@ -389,18 +439,32 @@ function updateScore() {
       ? "Цель выполнена! Сообщение отправлено родителю в Telegram. Отличная тренировка! ⚽"
       : "20 разных заданий решены! Отправляю родителю сообщение в Telegram…";
   } else {
-    dailyStatus.textContent = `Решено ${dailyCompleted} из ${dailyTarget}: математика и словарные слова. Осталось ${dailyTarget - dailyCompleted}.`;
+    const subjectRemaining = Math.max(relevantTaskIds.length - completedRelevantTasks, 0);
+    dailyStatus.textContent = currentSubject === "russian"
+      ? `В сегодняшнем плане осталось ${subjectRemaining} словарных заданий. Общая цель: ${dailyCompleted}/${dailyTarget}.`
+      : `В сегодняшнем плане осталось ${subjectRemaining} математических заданий. Общая цель: ${dailyCompleted}/${dailyTarget}.`;
   }
-  const dictationMode = currentTask?.mode === "dictation";
+  const dictationMode = currentSubject === "russian";
+  const hasNextSubjectTask = progress.daily.queue.some(taskId =>
+    taskId.startsWith(dictationMode ? "word:" : "math:") && !progress.daily.tasks.includes(taskId)
+  );
   nextButton.disabled = dictationMode
-    ? !currentTask.readyForNext
-    : dailyCompleted >= dailyTarget;
+    ? !currentTask?.readyForNext || (currentTask.mode === "dictation-session"
+      ? dictationIndex >= dictationQueue.length
+      : !hasNextSubjectTask)
+    : dailyCompleted >= dailyTarget || !hasNextSubjectTask;
   nextButton.innerHTML = dictationMode
-    ? currentTask.readyForNext && dictationIndex < dictationQueue.length
-      ? `Следующее слово (${dictationIndex + 1}/${dictationQueue.length}) <span aria-hidden="true">→</span>`
-      : currentTask.readyForNext
-        ? "Диктант окончен ✓"
-        : "Сначала напиши слово"
+    ? currentTask?.mode === "dictation-session"
+      ? currentTask.readyForNext && dictationIndex < dictationQueue.length
+        ? `Следующее слово (${dictationIndex + 1}/${dictationQueue.length}) <span aria-hidden="true">→</span>`
+        : currentTask.readyForNext
+          ? "Диктант окончен ✓"
+          : "Сначала напиши слово"
+      : currentTask?.readyForNext && hasNextSubjectTask
+        ? "Следующее словарное слово →"
+        : currentTask?.readyForNext
+          ? "Слова на сегодня повторены ✓"
+          : "Напиши слово по памяти"
     : dailyCompleted >= dailyTarget
       ? "Тренировка завершена ✓"
       : "Следующее задание <span aria-hidden=\"true\">→</span>";
@@ -422,7 +486,7 @@ function showTask(task) {
   const position = progress.daily.queue.indexOf(task.taskId);
   document.querySelector("#level-badge").textContent = position >= 0
     ? `ЗАДАНИЕ ${position + 1}/${dailyTarget}`
-    : task.mode === "dictation"
+    : task.mode === "dictation-session"
       ? `СЛОВО ${dictationIndex + 1}/${dictationQueue.length}`
       : "ПОВТОРЕНИЕ";
   wordCard.hidden = !isWord;
@@ -438,15 +502,21 @@ function showTask(task) {
   answerInput.value = "";
   feedback.textContent = "";
   feedback.className = "feedback";
-  if (task.mode === "dictation") task.readyForNext = false;
+  if (task.mode === "dictation" || task.mode === "dictation-session" || task.mode === "subject-practice") {
+    task.readyForNext = false;
+  }
   helpPanel.hidden = true;
   helpPanel.textContent = "";
   renderTopics();
+  renderWordList();
   answerInput.focus({ preventScroll: true });
 }
 
-function showNextTask() {
-  const nextTaskId = progress.daily.queue.find(taskId => !progress.daily.tasks.includes(taskId));
+function showNextSubjectTask(subject = currentSubject) {
+  const prefix = subject === "russian" ? "word:" : "math:";
+  const nextTaskId = progress.daily.queue.find(taskId =>
+    taskId.startsWith(prefix) && !progress.daily.tasks.includes(taskId)
+  );
   if (!nextTaskId) return;
   const [kind, id] = nextTaskId.split(":");
   if (kind === "math") {
@@ -455,16 +525,7 @@ function showNextTask() {
     return;
   }
   const word = [...dictationVocabulary, ...vocabulary].find(item => item.id === id);
-  if (word) showTask({ kind, word, taskId: nextTaskId });
-}
-
-function showNextVocabularyTask() {
-  const nextWordTaskId = progress.daily.queue.find(taskId =>
-    taskId.startsWith("word:") && !progress.daily.tasks.includes(taskId)
-  );
-  const word = [...dictationVocabulary, ...vocabulary].find(item => `word:${item.id}` === nextWordTaskId)
-    ?? shuffle([...dictationVocabulary, ...vocabulary])[0];
-  showTask({ kind: "word", word, taskId: `word:${word.id}` });
+  if (word) showTask({ kind, word, taskId: nextTaskId, mode: "subject-practice", readyForNext: false });
 }
 
 function showDictationWord() {
@@ -476,7 +537,7 @@ function showDictationWord() {
   }
   const scheduledId = `word:${word.id}`;
   const taskId = progress.daily.queue.includes(scheduledId) ? scheduledId : `dictation:${word.id}`;
-  showTask({ kind: "word", word, taskId, mode: "dictation", readyForNext: false });
+  showTask({ kind: "word", word, taskId, mode: "dictation-session", readyForNext: false });
 }
 
 function normalize(value) {
@@ -578,9 +639,9 @@ answerForm.addEventListener("submit", event => {
     stats.lastError = null;
     progress.wordStats[currentTask.word.id] = stats;
   }
-  if (currentTask.mode === "dictation") {
+  if (currentTask.mode === "dictation-session" || currentTask.mode === "subject-practice") {
     currentTask.readyForNext = true;
-    dictationIndex += 1;
+    if (currentTask.mode === "dictation-session") dictationIndex += 1;
   }
   progress.streak += 1;
   saveProgress();
@@ -626,8 +687,6 @@ wordToggle.addEventListener("click", () => {
   wordToggle.textContent = hidden ? "Показать слово" : "Спрятать слово и попробовать";
 });
 
-vocabularyButton.addEventListener("click", () => showNextVocabularyTask());
-
 dictationButton.addEventListener("click", () => {
   dictationQueue = shuffle(dictationVocabulary);
   dictationIndex = 0;
@@ -635,18 +694,23 @@ dictationButton.addEventListener("click", () => {
   document.querySelector(".lesson").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
+mathTab.addEventListener("click", () => setSubject("math"));
+russianTab.addEventListener("click", () => setSubject("russian"));
+
 nextButton.addEventListener("click", () => {
-  if (currentTask?.mode === "dictation") {
+  if (currentTask?.mode === "dictation-session") {
     showDictationWord();
+  } else if (currentSubject === "russian") {
+    showNextSubjectTask("russian");
   } else {
-    showNextTask();
+    showNextSubjectTask("math");
   }
   document.querySelector(".lesson").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 renderTopics();
-updateScore();
-showNextTask();
+renderWordList();
+setSubject(currentSubject);
 saveProgress();
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
